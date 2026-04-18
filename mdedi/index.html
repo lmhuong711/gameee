@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markdown Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #131316;
+    --surface2: #1a1a1f;
+    --border: #2a2a35;
+    --accent: #c8f135;
+    --accent2: #7c6af7;
+    --text: #e8e8f0;
+    --text-dim: #6b6b80;
+    --text-mid: #a0a0b8;
+    --header-h: 52px;
+    --toolbar-h: 40px;
+  }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    height: var(--header-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 26px;
+    height: 26px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-size: 13px;
+  }
+
+  .logo-text { color: var(--text); }
+  .logo-text span { color: var(--accent); }
+
+  .header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn:hover { background: var(--surface2); color: var(--text); border-color: #3a3a48; }
+
+  .btn-accent {
+    background: var(--accent);
+    color: #000;
+    border-color: transparent;
+  }
+
+  .btn-accent:hover { background: #d4f850; color: #000; border-color: transparent; }
+
+  .file-name-input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 6px;
+    width: 200px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .file-name-input:focus { border-color: var(--accent2); }
+
+  /* TOOLBAR */
+  .toolbar {
+    height: var(--toolbar-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .toolbar-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+    margin: 0 4px;
+  }
+
+  .tb-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .tb-btn:hover { background: var(--surface2); color: var(--text); }
+  .tb-btn:active { transform: scale(0.95); }
+
+  .tb-btn svg { width: 14px; height: 14px; }
+
+  /* VIEW TOGGLE */
+  .view-toggle {
+    margin-left: auto;
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .view-btn {
+    font-family: 'DM Sans', sans-serif;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .view-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+
+  /* MAIN AREA */
+  .workspace {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* PANES */
+  .pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: flex 0.25s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .pane-label {
+    padding: 6px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .pane-label .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .pane-divider {
+    width: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+    position: relative;
+    cursor: col-resize;
+    transition: background 0.15s;
+  }
+
+  .pane-divider:hover, .pane-divider.dragging { background: var(--accent2); }
+
+  .pane-divider::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -4px; right: -4px;
+  }
+
+  /* EDITOR */
+  #editor {
+    flex: 1;
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 28px 32px;
+    border: none;
+    outline: none;
+    resize: none;
+    caret-color: var(--accent);
+    overflow-y: auto;
+    tab-size: 2;
+  }
+
+  #editor::selection { background: rgba(124, 106, 247, 0.3); }
+  #editor::-webkit-scrollbar { width: 6px; }
+  #editor::-webkit-scrollbar-track { background: transparent; }
+  #editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  #editor::-webkit-scrollbar-thumb:hover { background: #3a3a48; }
+
+  /* PREVIEW */
+  #preview {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 40px;
+    background: var(--bg);
+  }
+
+  #preview::-webkit-scrollbar { width: 6px; }
+  #preview::-webkit-scrollbar-track { background: transparent; }
+  #preview::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* MARKDOWN STYLES */
+  .md-content { max-width: 760px; margin: 0 auto; line-height: 1.75; }
+  .md-content h1, .md-content h2, .md-content h3,
+  .md-content h4, .md-content h5, .md-content h6 {
+    font-family: 'DM Sans', sans-serif;
+    margin: 1.8em 0 0.6em;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .md-content h1 { font-size: 2.2em; border-bottom: 2px solid var(--accent); padding-bottom: 12px; }
+  .md-content h2 { font-size: 1.6em; }
+  .md-content h3 { font-size: 1.25em; color: var(--accent2); }
+  .md-content p { color: var(--text-mid); margin: 0.9em 0; font-size: 15px; }
+  .md-content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.15s; }
+  .md-content a:hover { border-bottom-color: var(--accent); }
+  .md-content strong { color: var(--text); font-weight: 700; }
+  .md-content em { color: var(--accent2); font-style: italic; }
+  .md-content ul, .md-content ol { padding-left: 1.5em; color: var(--text-mid); }
+  .md-content li { margin: 0.3em 0; }
+  .md-content li::marker { color: var(--accent); }
+  .md-content blockquote {
+    margin: 1.2em 0;
+    padding: 12px 20px;
+    border-left: 3px solid var(--accent2);
+    background: var(--surface2);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-mid);
+    font-style: italic;
+  }
+  .md-content code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent);
+  }
+  .md-content pre {
+    background: #0a0a0c;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+    margin: 1.2em 0;
+  }
+  .md-content pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: 13px;
+  }
+  .md-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2em 0;
+    font-size: 14px;
+  }
+  .md-content th {
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .md-content td {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+  }
+  .md-content tr:nth-child(even) td { background: var(--surface2); }
+  .md-content img { max-width: 100%; border-radius: 8px; margin: 0.8em 0; }
+  .md-content hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+
+  /* STATUS BAR */
+  .statusbar {
+    height: 26px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+
+  .status-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .status-item .val { color: var(--text-mid); }
+
+  .status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* HIDDEN STATES */
+  .workspace.view-editor .preview-pane,
+  .workspace.view-editor .pane-divider { display: none; }
+
+  .workspace.view-preview .editor-pane,
+  .workspace.view-preview .pane-divider { display: none; }
+
+  .workspace.view-preview .preview-pane { flex: 1; }
+
+  /* FADE IN */
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .md-content > * { animation: fadeSlide 0.2s ease forwards; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    opacity: 0;
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* CHEATSHEET MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .cheatsheet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 580px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+    animation: fadeSlide 0.18s ease forwards;
+  }
+  .cs-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--surface); z-index: 1;
+  }
+  .cs-title { font-size: 14px; font-weight: 700; }
+  .cs-close {
+    background: none; border: none;
+    color: var(--text-dim); cursor: pointer;
+    font-size: 20px; padding: 2px 6px;
+    border-radius: 4px; transition: color 0.15s; line-height: 1;
+  }
+  .cs-close:hover { color: var(--text); }
+  .cs-body {
+    padding: 16px 24px 24px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px;
+  }
+  .cs-section { margin-bottom: 18px; }
+  .cs-section-title {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 8px;
+  }
+  .cs-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .cs-desc { font-size: 12px; color: var(--text-mid); }
+  .cs-keys { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
+  kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    color: var(--text); padding: 2px 6px;
+    border-radius: 4px; white-space: nowrap;
+  }
+  .cs-plus { font-size: 10px; color: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">M↓</div>
+    <div class="logo-text">Markdown <span>Studio</span></div>
+  </div>
+  <input class="file-name-input" id="fileName" type="text" value="untitled.md" spellcheck="false">
+  <div class="header-actions">
+    <button class="btn" onclick="copyHTML()">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1h-1v1a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h1V2H4zm5 0v1h4v4h1V2H9z"/></svg>
+      Copy HTML
+    </button>
+    <button class="btn" onclick="downloadMD()">⤓ .md</button>
+    <button class="btn btn-accent" onclick="downloadHTML()">⤓ .html</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button class="tb-btn" onclick="wrap('**','**')" title="Bold — Ctrl+B"><b>B</b></button>
+  <button class="tb-btn" onclick="wrap('*','*')" title="Italic — Ctrl+I"><i>I</i></button>
+  <button class="tb-btn" onclick="wrap('~~','~~')" title="Strikethrough — Ctrl+Shift+X"><s>S</s></button>
+  <button class="tb-btn" onclick="wrap('`','`')" title="Inline code — Ctrl+`">&#96;&#96;</button>
+  <div class="toolbar-sep"></div>
+  <button class="tb-btn" onclick="insertLine('# ')" title="Heading 1 — Ctrl+1">H1</button>
+  <button class="tb-btn" onclick="insertLine('## ')" title="Heading 2 — Ctrl+2">H2</button>
+  <button class="tb-btn" onclick="insertLine('### ')" title="Heading 3 — Ctrl+3">H3</button>
+  <div class="toolbar-sep"></div>
+  <button class="tb-btn" onclick="insertLine('- ')" title="Bullet list — Ctrl+Shift+U">• List</button>
+  <button class="tb-btn" onclick="insertLine('1. ')" title="Ordered list — Ctrl+Shift+O">1. List</button>
+  <button class="tb-btn" onclick="insertLine('> ')" title="Blockquote — Ctrl+Shift+Q">❝ Quote</button>
+  <button class="tb-btn" onclick="insertLine('---')" title="Horizontal rule — Ctrl+Shift+H">― HR</button>
+  <div class="toolbar-sep"></div>
+  <button class="tb-btn" onclick="insertLink()" title="Link — Ctrl+K">🔗 Link</button>
+  <button class="tb-btn" onclick="insertImage()" title="Image — Ctrl+Shift+I">🖼 Image</button>
+  <button class="tb-btn" onclick="insertTable()" title="Table — Ctrl+Shift+T">⊞ Table</button>
+  <button class="tb-btn" onclick="insertCode()" title="Code block — Ctrl+Shift+C">⟨/⟩ Code</button>
+
+  <div class="view-toggle">
+    <button class="view-btn active" id="vbSplit" onclick="setView('split')" title="Split view — Ctrl+\">Split</button>
+    <button class="view-btn" id="vbEditor" onclick="setView('editor')" title="Editor only — Ctrl+Shift+E">Editor</button>
+    <button class="view-btn" id="vbPreview" onclick="setView('preview')" title="Preview only — Ctrl+Shift+P">Preview</button>
+  </div>
+  <button class="tb-btn" onclick="toggleCheatsheet()" title="Keyboard shortcuts — Ctrl+/" style="margin-left:6px;color:var(--accent);border:1px solid var(--border);border-radius:5px;padding:3px 9px;font-weight:700;font-size:13px;">?</button>
+</div>
+
+<div class="workspace view-split" id="workspace">
+  <div class="pane editor-pane">
+    <div class="pane-label"><div class="dot"></div> EDITOR</div>
+    <textarea id="editor" spellcheck="false" placeholder="Start writing markdown..."></textarea>
+  </div>
+  <div class="pane-divider" id="divider"></div>
+  <div class="pane preview-pane">
+    <div class="pane-label"><div class="dot" style="background:var(--accent2)"></div> PREVIEW</div>
+    <div id="preview"><div class="md-content" id="previewContent"></div></div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="status-item"><div class="status-dot"></div> Live</div>
+  <div class="status-item">Words: <span class="val" id="wordCount">0</span></div>
+  <div class="status-item">Lines: <span class="val" id="lineCount">0</span></div>
+  <div class="status-item">Chars: <span class="val" id="charCount">0</span></div>
+  <div class="status-item" style="margin-left:auto">Ln <span class="val" id="cursorLine">1</span>, Col <span class="val" id="cursorCol">1</span></div>
+</div>
+
+
+<!-- CHEATSHEET MODAL -->
+<div class="modal-backdrop" id="cheatsheetModal" onclick="closeCheatsheetOnBackdrop(event)">
+  <div class="cheatsheet">
+    <div class="cs-header">
+      <div class="cs-title">⌨ Keyboard Shortcuts</div>
+      <button class="cs-close" onclick="toggleCheatsheet()">×</button>
+    </div>
+    <div class="cs-body">
+      <div class="cs-section">
+        <div class="cs-section-title">Formatting</div>
+        <div class="cs-row"><span class="cs-desc">Bold</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>B</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Italic</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>I</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Strikethrough</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>X</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Inline code</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>`</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Link</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>K</kbd></span></div>
+        <div class="cs-section-title" style="margin-top:14px">Headings</div>
+        <div class="cs-row"><span class="cs-desc">Heading 1</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>1</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Heading 2</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>2</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Heading 3</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>3</kbd></span></div>
+      </div>
+      <div class="cs-section">
+        <div class="cs-section-title">Blocks</div>
+        <div class="cs-row"><span class="cs-desc">Bullet list</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>U</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Ordered list</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>O</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Blockquote</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>Q</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Code block</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>C</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Table</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>T</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Image</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>I</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Horizontal rule</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>H</kbd></span></div>
+        <div class="cs-section-title" style="margin-top:14px">View &amp; App</div>
+        <div class="cs-row"><span class="cs-desc">Split view</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>\</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Editor only</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>E</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Preview only</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>P</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Undo</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Z</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Redo</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>Shift</kbd><span class="cs-plus">+</span><kbd>Z</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">Save / Download</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>S</kbd></span></div>
+        <div class="cs-row"><span class="cs-desc">This cheatsheet</span><span class="cs-keys"><kbd>Ctrl</kbd><span class="cs-plus">+</span><kbd>/</kbd></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const editor = document.getElementById('editor');
+const previewContent = document.getElementById('previewContent');
+
+// Undo/Redo stacks
+let undoStack = [];
+let redoStack = [];
+const maxUndoSteps = 50;
+
+// Marked config
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      return hljs.highlight(code, { language: lang }).value;
+    }
+    return hljs.highlightAuto(code).value;
+  },
+  breaks: true,
+  gfm: true
+});
+
+const DEFAULT_MD = `# Welcome to Markdown Studio
+
+A **beautiful**, minimal markdown editor built for focus.
+
+## Features
+
+- ✨ Live split preview
+- 🎨 Syntax highlighting for code blocks
+- 📋 One-click HTML copy
+- ⬇️ Export as \`.md\` or \`.html\`
+- 🛠 Toolbar for quick formatting
+
+## Code Example
+
+\`\`\`javascript
+function greet(name) {
+  return \`Hello, \${name}!\`;
+}
+
+console.log(greet('World'));
+\`\`\`
+
+## Table
+
+| Feature | Status |
+|---------|--------|
+| Editor  | ✅ Ready |
+| Preview | ✅ Ready |
+| Export  | ✅ Ready |
+
+> *"The best tool is the one that gets out of your way."*
+
+---
+
+Start editing this text to see live preview updates!
+`;
+
+editor.value = DEFAULT_MD;
+renderPreview();
+updateStats();
+
+// Helper functions for undo/redo
+let isUndoingOrRedoing = false;
+
+function saveToUndoStack() {
+  if (isUndoingOrRedoing) return;
+  undoStack.push(editor.value);
+  if (undoStack.length > maxUndoSteps) undoStack.shift();
+  redoStack = []; // Clear redo stack when new change is made
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  isUndoingOrRedoing = true;
+  redoStack.push(editor.value);
+  editor.value = undoStack.pop();
+  renderPreview();
+  updateStats();
+  updateCursor();
+  showToast('Undo');
+  isUndoingOrRedoing = false;
+}
+
+function redo() {
+  if (redoStack.length === 0) return;
+  isUndoingOrRedoing = true;
+  undoStack.push(editor.value);
+  editor.value = redoStack.pop();
+  renderPreview();
+  updateStats();
+  updateCursor();
+  showToast('Redo');
+  isUndoingOrRedoing = false;
+}
+
+let renderTimer = null;
+editor.addEventListener('input', () => {
+  updateStats();
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderPreview, 300);
+});
+
+editor.addEventListener('keyup', updateCursor);
+editor.addEventListener('click', updateCursor);
+
+editor.addEventListener('keydown', (e) => {
+  const ctrl = e.ctrlKey || e.metaKey;
+
+  // Save state before any text-changing operation
+  if (!ctrl && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter')) {
+    saveToUndoStack();
+  }
+
+  // Tab indent
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart;
+    saveToUndoStack();
+    editor.setRangeText('  ', s, s, 'end');
+    renderPreview();
+    return;
+  }
+
+  if (!ctrl) return;
+
+  const key = e.key.toLowerCase();
+  const shift = e.shiftKey;
+
+  // ── Formatting ──
+  if (!shift && key === 'b') { e.preventDefault(); wrap('**','**'); return; }
+  if (!shift && key === 'i') { e.preventDefault(); wrap('*','*'); return; }
+  if (shift  && key === 'x') { e.preventDefault(); wrap('~~','~~'); return; }
+  if (!shift && key === '`') { e.preventDefault(); wrap('`','`'); return; }
+  if (!shift && key === 'k') { e.preventDefault(); insertLink(); return; }
+
+  // ── Headings ──
+  if (!shift && key === '1') { e.preventDefault(); insertLine('# '); return; }
+  if (!shift && key === '2') { e.preventDefault(); insertLine('## '); return; }
+  if (!shift && key === '3') { e.preventDefault(); insertLine('### '); return; }
+
+  // ── Blocks ──
+  if (shift && key === 'u') { e.preventDefault(); insertLine('- '); return; }
+  if (shift && key === 'o') { e.preventDefault(); insertLine('1. '); return; }
+  if (shift && key === 'q') { e.preventDefault(); insertLine('> '); return; }
+  if (shift && key === 'c') { e.preventDefault(); insertCode(); return; }
+  if (shift && key === 't') { e.preventDefault(); insertTable(); return; }
+  if (shift && key === 'i') { e.preventDefault(); insertImage(); return; }
+  if (shift && key === 'h') { e.preventDefault(); insertLine('---'); return; }
+
+  // ── View ──
+  if (!shift && key === '\\') { e.preventDefault(); setView('split'); return; }
+  if (shift && key === 'e')  { e.preventDefault(); setView('editor'); return; }
+  if (shift && key === 'p')  { e.preventDefault(); setView('preview'); return; }
+
+  // ── Undo/Redo ──
+  if (!shift && key === 'z') { e.preventDefault(); undo(); return; }
+  if (shift && key === 'z')  { e.preventDefault(); redo(); return; }
+
+  // ── App ──
+  if (!shift && key === 's') { e.preventDefault(); downloadMD(); return; }
+  if (!shift && key === '/') { e.preventDefault(); toggleCheatsheet(); return; }
+});
+
+// Handle cut, paste, and drop operations for undo/redo
+editor.addEventListener('cut', () => {
+  saveToUndoStack();
+});
+
+editor.addEventListener('paste', () => {
+  saveToUndoStack();
+});
+
+editor.addEventListener('drop', () => {
+  saveToUndoStack();
+});
+
+// Global shortcut for Ctrl+/ when not in editor
+document.addEventListener('keydown', (e) => {
+  if (document.activeElement === editor) return;
+  const ctrl = e.ctrlKey || e.metaKey;
+  if (ctrl && e.key === '/') { e.preventDefault(); toggleCheatsheet(); }
+  if (ctrl && e.key === 'Escape') { closeCheatsheet(); }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeCheatsheet();
+});
+
+function toggleCheatsheet() {
+  document.getElementById('cheatsheetModal').classList.toggle('open');
+}
+function closeCheatsheet() {
+  document.getElementById('cheatsheetModal').classList.remove('open');
+}
+function closeCheatsheetOnBackdrop(e) {
+  if (e.target === document.getElementById('cheatsheetModal')) closeCheatsheet();
+}
+
+function renderPreview() {
+  previewContent.innerHTML = marked.parse(editor.value);
+  previewContent.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+}
+
+function updateStats() {
+  const text = editor.value;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const lines = text.split('\n').length;
+  document.getElementById('wordCount').textContent = words;
+  document.getElementById('lineCount').textContent = lines;
+  document.getElementById('charCount').textContent = text.length;
+}
+
+function updateCursor() {
+  const text = editor.value.substring(0, editor.selectionStart);
+  const lines = text.split('\n');
+  document.getElementById('cursorLine').textContent = lines.length;
+  document.getElementById('cursorCol').textContent = lines[lines.length - 1].length + 1;
+}
+
+// View toggle
+function setView(v) {
+  const ws = document.getElementById('workspace');
+  ws.className = `workspace view-${v}`;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('v' + 'b' + v.charAt(0).toUpperCase() + v.slice(1)).classList.add('active');
+}
+
+// Wrap selection
+function wrap(before, after) {
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  const sel = editor.value.substring(s, e) || 'text';
+  saveToUndoStack();
+  editor.setRangeText(before + sel + after, s, e, 'select');
+  editor.focus();
+  renderPreview();
+}
+
+// Insert at line start
+function insertLine(prefix) {
+  const s = editor.selectionStart;
+  const lineStart = editor.value.lastIndexOf('\n', s - 1) + 1;
+  saveToUndoStack();
+  editor.setRangeText(prefix, lineStart, lineStart, 'end');
+  editor.focus();
+  renderPreview();
+}
+
+function insertLink() {
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  const sel = editor.value.substring(s, e) || 'link text';
+  saveToUndoStack();
+  editor.setRangeText(`[${sel}](https://example.com)`, s, e, 'end');
+  editor.focus();
+  renderPreview();
+}
+
+function insertImage() {
+  const s = editor.selectionStart;
+  saveToUndoStack();
+  editor.setRangeText('![alt text](https://example.com/image.jpg)', s, s, 'end');
+  editor.focus();
+  renderPreview();
+}
+
+function insertTable() {
+  const s = editor.selectionStart;
+  saveToUndoStack();
+  const table = '\n| Header 1 | Header 2 | Header 3 |\n|----------|----------|----------|\n| Cell 1   | Cell 2   | Cell 3   |\n| Cell 4   | Cell 5   | Cell 6   |\n';
+  editor.setRangeText(table, s, s, 'end');
+  editor.focus();
+  renderPreview();
+}
+
+function insertCode() {
+  const s = editor.selectionStart, e = editor.selectionEnd;
+  const sel = editor.value.substring(s, e) || 'code here';
+  saveToUndoStack();
+  editor.setRangeText('```javascript\n' + sel + '\n```', s, e, 'end');
+  editor.focus();
+  renderPreview();
+}
+
+// Exports
+function downloadMD() {
+  const name = document.getElementById('fileName').value.replace(/\.html?$/, '') || 'document';
+  const fname = name.endsWith('.md') ? name : name + '.md';
+  download(fname, editor.value, 'text/markdown');
+}
+
+function downloadHTML() {
+  const name = document.getElementById('fileName').value.replace(/\.md$/, '') || 'document';
+  const fname = name.endsWith('.html') ? name : name + '.html';
+  const html = buildFullHTML();
+  download(fname, html, 'text/html');
+}
+
+function copyHTML() {
+  navigator.clipboard.writeText(previewContent.innerHTML).then(() => showToast('HTML copied to clipboard!'));
+}
+
+function buildFullHTML() {
+  return ``;
+}
+
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  a.click();
+  showToast(`Downloaded ${name}`);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Resizable divider
+const divider = document.getElementById('divider');
+const workspace = document.getElementById('workspace');
+
+let dragging = false, startX, startLeft;
+
+divider.addEventListener('mousedown', e => {
+  dragging = true;
+  startX = e.clientX;
+  const editorPane = workspace.querySelector('.editor-pane');
+  startLeft = editorPane.getBoundingClientRect().width;
+  divider.classList.add('dragging');
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const dx = e.clientX - startX;
+  const total = workspace.getBoundingClientRect().width;
+  const newLeft = Math.min(Math.max(startLeft + dx, 200), total - 200);
+  const pct = (newLeft / total * 100).toFixed(1);
+  workspace.querySelector('.editor-pane').style.flex = `0 0 ${pct}%`;
+  workspace.querySelector('.preview-pane').style.flex = `0 0 ${100 - parseFloat(pct)}%`;
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragging) {
+    dragging = false;
+    divider.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+});
+</script>
+</body>
+</html>

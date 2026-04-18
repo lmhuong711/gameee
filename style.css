@@ -1,6 +1,27 @@
 :root {
   --primary-color: rgb(135, 206, 235);
   --secondary-color: rgb(104, 158, 179);
+
+  --rainbow1-1: #faaaaa;
+  --rainbow2-1: #fac88c;
+  --rainbow3-1: #fae66e;
+  --rainbow4-1: #aafaaa;
+  --rainbow5-1: #6ee6fa;
+  --rainbow6-1: #8caafa;
+  --rainbow7-1: #c88cfa;
+  --rainbow1-2: #964646;
+  --rainbow2-2: #966428;
+  --rainbow3-2: #96820a;
+  --rainbow4-2: #469646;
+  --rainbow6-2: #284696;
+  --rainbow5-2: #0a8296;
+  --rainbow7-2: #642896;
+  --grey1-1: #eee;
+  --grey1-2: #ccc;
+
+  --full-linear-1: var(--rainbow1-1), var(--rainbow2-1), var(--rainbow3-1), var(--rainbow4-1), var(--rainbow5-1), var(--rainbow6-1), var(--rainbow7-1);
+  --full-linear-2: var(--rainbow1-2), var(--rainbow2-2), var(--rainbow3-2), var(--rainbow4-2), var(--rainbow5-2), var(--rainbow6-2), var(--rainbow7-2);
+
 }
 
 .nav_menu li {
